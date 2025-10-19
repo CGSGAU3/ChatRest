@@ -54,7 +54,7 @@ void Server::listenConnections( void )
     else
     {
       std::cout << "Client connected!\n";
-      char msg[MSG_LENGTH] = "Äîáðî ïîæàëîâàòü â àöêèé ñåðâåð!\r\n";
+      char msg[MSG_LENGTH] = "Ð”Ð¾Ð±Ñ€Ð¾ Ð¿Ð¾Ð¶Ð°Ð»Ð¾Ð²Ð°Ñ‚ÑŒ Ð² Ð°Ñ†ÐºÐ¸Ð¹ ÑÐµÑ€Ð²ÐµÑ€!\r\n";
       send(newConnection, msg, sizeof(msg), 0);
 
       int i = 0;
@@ -66,7 +66,7 @@ void Server::listenConnections( void )
       users[i].state = User::status::auth_login;
 
       memset(msg, 0, MSG_LENGTH);
-      strcpy(msg, "Ââåäèòå ëîãèí: ");
+      strcpy(msg, "Ð’Ð²ÐµÐ´Ð¸Ñ‚Ðµ Ð»Ð¾Ð³Ð¸Ð½: ");
       send(newConnection, msg, sizeof(msg), 0);
 
       HandlerParam param = {this, i};
@@ -106,7 +106,7 @@ void Server::handleMessage( int index )
       users[index].state = User::status::disconnected;
       if (std::string((char *)users[index].name) != "")
       {
-        sprintf(msg, "           %s ëèâíóë ñ àöêîãî ñåðâåðà!\r\n", users[index].name);
+        sprintf(msg, "           %s Ð»Ð¸Ð²Ð½ÑƒÐ» Ñ Ð°Ñ†ÐºÐ¾Ð³Ð¾ ÑÐµÑ€Ð²ÐµÑ€Ð°!\r\n", users[index].name);
         sendAllUsers(msg);
       }
     }
@@ -132,13 +132,13 @@ void Server::handleMessage( int index )
       SOCKET temp = users[index].conn;;
       users[index] = userNames[addon];
       users[index].conn = temp;
-      sendMessage(index, "\r\nÂâåäèòå ïàðîëü: ");
+      sendMessage(index, "\r\nÐ’Ð²ÐµÐ´Ð¸Ñ‚Ðµ Ð¿Ð°Ñ€Ð¾Ð»ÑŒ: ");
       users[index].state = User::status::auth_password;
     }
     else
     {
       userNames[addon] = users[index];
-      sendMessage(index, "\r\nÏðèäóìàéòå ïàðîëü: ");
+      sendMessage(index, "\r\nÐŸÑ€Ð¸Ð´ÑƒÐ¼Ð°Ð¹Ñ‚Ðµ Ð¿Ð°Ñ€Ð¾Ð»ÑŒ: ");
       users[index].state = User::status::registered_password;
     }
     break;
@@ -146,30 +146,30 @@ void Server::handleMessage( int index )
     addon = (char *)users[index].login;
     if (strcmp(SHA256(strMsg).c_str(), userNames[addon].hash) == 0)
     {
-      sendMessage(index, "\r\nÏîäêëþ÷åíî!\r\n");
+      sendMessage(index, "\r\nÐŸÐ¾Ð´ÐºÐ»ÑŽÑ‡ÐµÐ½Ð¾!\r\n");
       users[index].state = User::status::connected;
-      sprintf(msg, "           %s çàøåë íà àöêèé ñåðâåð\r\n", users[index].name);
+      sprintf(msg, "           %s Ð·Ð°ÑˆÐµÐ» Ð½Ð° Ð°Ñ†ÐºÐ¸Ð¹ ÑÐµÑ€Ð²ÐµÑ€\r\n", users[index].name);
       sendAllUsers(msg);
     }
     else
     {
-      sendMessage(index, "\r\nÍåâåðíûé ïàðîëü!\r\n");
+      sendMessage(index, "\r\nÐÐµÐ²ÐµÑ€Ð½Ñ‹Ð¹ Ð¿Ð°Ñ€Ð¾Ð»ÑŒ!\r\n");
     }
     break;
   case User::status::registered_password:
     strncpy((char *)users[index].hash, SHA256(strMsg).c_str(), 64);
     users[index].hash[64] = 0;
     users[index].state = User::status::registered_name;
-    sendMessage(index, "\r\nÂâåäèòå èìÿ (äî 32 ñèìâîëîâ): ");
+    sendMessage(index, "\r\nÐ’Ð²ÐµÐ´Ð¸Ñ‚Ðµ Ð¸Ð¼Ñ (Ð´Ð¾ 32 ÑÐ¸Ð¼Ð²Ð¾Ð»Ð¾Ð²): ");
     break;
   case User::status::registered_name:
     strncpy((char *)users[index].name, strMsg.c_str(), 32);
     users[index].name[32] = 0;
     addon = (char *)users[index].login;
     userNames[addon] = users[index];
-    sendMessage(index, "\r\nÇàðåãèñòðèðîâàíî!\r\n");
+    sendMessage(index, "\r\nÐ—Ð°Ñ€ÐµÐ³Ð¸ÑÑ‚Ñ€Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¾!\r\n");
     users[index].state = User::status::connected;
-    sprintf(msg, "           %s çàøåë íà àöêèé ñåðâåð\r\n", users[index].name);
+    sprintf(msg, "           %s Ð·Ð°ÑˆÐµÐ» Ð½Ð° Ð°Ñ†ÐºÐ¸Ð¹ ÑÐµÑ€Ð²ÐµÑ€\r\n", users[index].name);
     sendAllUsers(msg);
     break;
   case User::status::connected:
