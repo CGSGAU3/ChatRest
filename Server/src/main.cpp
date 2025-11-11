@@ -1,11 +1,17 @@
 #include "server.h"
+#include "database.h"
 
 int main( int argc, char *argv[] )
 {
-  Server serv;
+    try
+    {
+        Database db("test.db");
 
-  serv.listenConnections();
-  system("pause");
-
-  return 0;
+        return EXIT_SUCCESS;
+    }
+    catch ( const std::exception &e )
+    {
+        spdlog::error(e.what());
+        return EXIT_FAILURE;
+    }
 }

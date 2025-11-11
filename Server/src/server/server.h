@@ -11,6 +11,7 @@
 
 constexpr unsigned long MSG_LENGTH = 4096;
 
+#if 0
 class User
 {
 private:
@@ -82,3 +83,4 @@ public:
 
   ~Server( void );
 };
+#endif

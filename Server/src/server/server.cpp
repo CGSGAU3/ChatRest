@@ -1,3 +1,4 @@
+#if 0
 #include "server.h"
 
 Server::Server( unsigned short newPort ) : port(newPort)
@@ -235,3 +236,4 @@ Server::~Server( void )
     stop();
   WSACleanup();
 }
+#endif

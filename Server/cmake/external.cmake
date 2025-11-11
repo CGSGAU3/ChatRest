@@ -8,6 +8,19 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(cpp-httplib)
 
+CPMAddPackage( NAME SQLiteCpp
+    GIT_REPOSITORY "https://github.com/SRombauts/SQLiteCpp.git"
+    GIT_TAG 3.3.3
+) 
+
+CPMAddPackage(NAME spdlog
+    GIT_REPOSITORY "https://github.com/gabime/spdlog.git"
+    GIT_TAG v1.15.3
+)
+
 list( APPEND SERVER_LIBS
     httplib
+    SQLiteCpp
+    sqlite3
+    spdlog::spdlog
 )
