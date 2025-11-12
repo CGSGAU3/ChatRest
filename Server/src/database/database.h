@@ -50,4 +50,5 @@ public:
     auto addUser( const User &user ) -> Error;
     auto getAllUsers( void ) const -> std::vector<User>;
     auto getUserByLogin( const std::string &login ) const -> std::optional<User>;
+    auto getUserById( const int id ) const -> std::optional<User>;
 };

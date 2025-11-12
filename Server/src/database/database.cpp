@@ -128,3 +128,30 @@ auto Database::getUserByLogin( const std::string &login ) const -> std::optional
     
     return std::nullopt;
 }
+
+auto Database::getUserById( const int id ) const -> std::optional<User>
+{
+    try
+    {
+        SQLite::Statement query(_db, "SELECT * FROM users WHERE id = ?");
+
+        query.bind(1, id);
+        if (query.executeStep())
+        {
+            User user;
+
+            user.id = query.getColumn("id");
+            user.login = query.getColumn("login").getString();
+            user.password = query.getColumn("password").getString();
+            user.firstName = query.getColumn("first_name").getString();
+            user.lastName = query.getColumn("last_name").getString();
+            user.isOnline = (int)query.getColumn("is_online");
+            
+            return user;
+        }        
+    } catch (const std::exception& e) {
+        spdlog::warn(std::string("Error finding user by login: ") + e.what());
+    }
+    
+    return std::nullopt; 
+}
