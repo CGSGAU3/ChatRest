@@ -15,6 +15,14 @@ struct User final
     bool isOnline;
 };
 
+struct Message final
+{
+    int id;
+    int userId;
+    std::string messageText;
+    std::string timestamp;
+};
+
 class Database final
 {
 private:

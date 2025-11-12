@@ -15,7 +15,18 @@ Database::Database( const std::string &name ) :
                 password TEXT NOT NULL,
                 first_name TEXT NOT NULL,
                 last_name TEXT NOT NULL,
-                is_online BOOLEAN))");
+                is_online BOOLEAN
+            ))");
+
+        _db.exec(R"(
+                CREATE TABLE IF NOT EXISTS messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                message_text TEXT NOT NULL,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            ))");
+
         spdlog::trace("Database and tables are created or opened successfully!");
     } 
     catch ( const std::exception &e )
