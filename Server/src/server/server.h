@@ -27,6 +27,8 @@ private:
     std::string _startedAt;
 
     void _handleAlive( const Request &req, Response &res ) const;
+    void _handleRegister( const Request &req, Response &res ) const;
+    void _handleLogin( const Request &req, Response &res ) const;
 
     auto _getCurrentTimestamp( void ) const -> std::string;
     void _setupHandlers( void );

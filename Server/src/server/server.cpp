@@ -57,8 +57,25 @@ void Server::_handleAlive( const Request &req, Response &res ) const
     res.set_content(status.dump(), "application/json");
 }
 
-void Server::_setupHandlers( void ) {
+void Server::_handleRegister( const Request &req, Response &res ) const
+{
+}
+
+void Server::_handleLogin( const Request &req, Response &res ) const
+{
+}
+
+void Server::_setupHandlers( void )
+{
     _server->Get("/api/alive", [&]( const Request &req, Response &res ) {
         _handleAlive(req, res);
+    });
+
+    _server->Post("/api/auth/register", [&]( const Request &req, Response &res ) {
+        _handleRegister(req, res);
+    });
+
+    _server->Post("/api/auth/login", [&]( const Request &req, Response &res ) {
+        _handleLogin(req, res);
     });
 }
