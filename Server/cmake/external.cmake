@@ -13,14 +13,20 @@ CPMAddPackage( NAME SQLiteCpp
     GIT_TAG 3.3.3
 ) 
 
-CPMAddPackage(NAME spdlog
+CPMAddPackage( NAME spdlog
     GIT_REPOSITORY "https://github.com/gabime/spdlog.git"
     GIT_TAG v1.15.3
+)
+
+CPMAddPackage( NAME nlohmann_json
+    GIT_REPOSITORY "https://github.com/nlohmann/json.git"
+    GIT_TAG v3.12.0
 )
 
 list( APPEND SERVER_LIBS
     httplib
     SQLiteCpp
     sqlite3
+    nlohmann_json
     spdlog::spdlog
 )

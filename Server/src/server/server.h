@@ -1,86 +1,34 @@
 #pragma once
 
-#include <iostream>
-#pragma comment(lib, "ws2_32.lib")
-#include <winsock2.h>
+#include <httplib.h>
+#include <nlohmann/json.hpp>
 
-#include <vector>
-#include <map>
+#include "database/database.h"
 
-#include "sha256.h"
-
-constexpr unsigned long MSG_LENGTH = 4096;
-
-#if 0
-class User
+class Server final
 {
+    using Request = httplib::Request;
+    using Response = httplib::Response;
+    using StatusCode = httplib::StatusCode;
+    using Json = nlohmann::json;
+
+public:
+
+    explicit Server( const std::string &host, const int port, const std::string &dbName = "a.db" );
+    void run( void );
+
 private:
-  SOCKET conn; // socket to provide connection
 
-  enum struct status
-  {
-    auth_login,
-    auth_password,
-    registered_password,
-    registered_name,
-    connected,
-    disconnected
-  } state = status::auth_login;
+    std::unique_ptr<httplib::Server> _server;
+    Database _db;
 
-public:
-  unsigned char name[33] = {0};  // name :))
-  unsigned char login[65]; // = username
-  char hash[65];           // hashed password
+    std::string _host;
+    int _port;
+    std::string _startedAt;
 
-  friend class Server;     // because we can
+    void _handleAlive( const Request &req, Response &res ) const;
+
+    auto _getCurrentTimestamp( void ) const -> std::string;
+    void _setupHandlers( void );
+
 };
-
-struct DBUser
-{
-  unsigned char name[32];
-  unsigned char login[64];
-  char hash[64];
-};
-
-class Server
-{
-  SOCKET listener;
-  unsigned short port;
-  WSAData wsaData;
-  std::map<int, HANDLE> userThreads;
-
-  enum class status : UINT
-  {
-    open,
-    errSocketInit,
-    errSocketBind,
-    errSocketListen,
-    close
-  } state = status::close;
-
-  struct HandlerParam
-  {
-    Server *serv;
-    int index;
-  };
-  std::map<int, User> users;
-  std::map<std::string, User> userNames;
-
-public:
-
-  Server( unsigned short newPort = 8080 );
-
-  status start( void );
-  status restart( void );
-  void stop( void );
-
-  void listenConnections( void );
-  void handleMessage( int index );
-  void sendMessage( int index, const std::string &msg );
-  void sendAllUsers( const std::string &msg );
-
-  static void clientHandler( HandlerParam *param );
-
-  ~Server( void );
-};
-#endif

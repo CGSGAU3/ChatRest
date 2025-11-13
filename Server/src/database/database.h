@@ -23,6 +23,13 @@ struct Message final
     std::string timestamp;
 };
 
+struct Token final
+{
+    int id;
+    int userId;
+    std::string token;
+};
+
 class Database final
 {
 private:
@@ -42,8 +49,6 @@ public:
             return isError;
         }
     };
-
-    bool opened;
 
     Database( const std::string &name = "a.db" );
 

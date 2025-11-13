@@ -1,239 +1,64 @@
-#if 0
+#include <chrono>
+#include <format>
+
+#include <spdlog/spdlog.h>
+
 #include "server.h"
 
-Server::Server( unsigned short newPort ) : port(newPort)
+Server::Server( const std::string &host, const int port, const std::string &dbName ) :
+    _db(dbName), _server(nullptr), _host(host), _port(port) {}
+
+void Server::run( void )
 {
-  state = start();
-}
-
-Server::status Server::start( void )
-{
-  system("chcp 1251 > nul");
-
-  WORD DLLVersion = MAKEWORD(2, 2);
-  if (WSAStartup(DLLVersion, &wsaData) != 0)
-  {
-    std::cout << "Error init" << std::endl;
-    return status::errSocketInit;
-  }
-
-  SOCKADDR_IN addr{};
-  addr.sin_addr.s_addr = INADDR_ANY;
-  addr.sin_port = htons(port);
-  addr.sin_family = AF_INET;
-
-  listener = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-
-  if (listener == SOCKET_ERROR)
-    return state = status::errSocketInit;
-
-  if (bind(listener, (SOCKADDR*)&addr, sizeof(addr)) == SOCKET_ERROR)
-    return state = status::errSocketBind;
-
-  if (listen(listener, SOMAXCONN) == SOCKET_ERROR)
-    return state = status::errSocketListen;
-
-  state = status::open;
-  std::cout << "Server started!" << std::endl;
-  return state;
-}
-
-void Server::listenConnections( void )
-{
-  SOCKET newConnection;
-  SOCKADDR_IN addr{};
-  int sizeofaddr = sizeof(addr);
-
-  while (state == status::open)
-  {
-    newConnection = accept(listener, (SOCKADDR*)&addr, &sizeofaddr);
-
-    if (newConnection == 0)
+    if (_server)
     {
-      std::cout << "Error connect!\n";
+        spdlog::warn("Server is already existed!");
+        return;
     }
-    else
-    {
-      std::cout << "Client connected!\n";
-      char msg[MSG_LENGTH] = "Добро пожаловать в ацкий сервер!\r\n";
-      send(newConnection, msg, sizeof(msg), 0);
 
-      int i = 0;
+    _server = std::make_unique<httplib::Server>();
 
-      while (users.find(i) != users.end())
-        i++;
+    spdlog::info("Running server on " + _host + ":" + std::to_string(_port) + "...");
 
-      users[i].conn = newConnection;
-      users[i].state = User::status::auth_login;
+    httplib::Headers corsHeaders = {
+        {"Access-Control-Allow-Origin", "*"},
+        {"Access-Control-Allow-Methods", "*"},
+        {"Access-Control-Allow-Headers", "*"}};
 
-      memset(msg, 0, MSG_LENGTH);
-      strcpy(msg, "Введите логин: ");
-      send(newConnection, msg, sizeof(msg), 0);
+    _server->set_default_headers(corsHeaders);
 
-      HandlerParam param = {this, i};
-      userThreads[i] = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)clientHandler, &param, NULL, NULL);
+    _setupHandlers();
+
+    _startedAt = _getCurrentTimestamp();
+
+    if (!_server->listen(_host, _port)) {
+        throw std::runtime_error("Server run error!");
     }
-  }
 }
 
-void Server::clientHandler( HandlerParam *param )
+auto Server::_getCurrentTimestamp( void ) const -> std::string
 {
-  Server *serv = param->serv;
-  int index = param->index;
+    auto now = std::chrono::system_clock::now();
+    auto localNow = std::chrono::current_zone()->to_local(now);
+    auto localSeconds = std::chrono::floor<std::chrono::seconds>(localNow);
 
-  while (serv->state == status::open && serv->users[index].state != User::status::disconnected)
-    serv->handleMessage(index);
+    return std::format(R"({:%Y-%m-%d %H:%M:%S})", localSeconds);
 }
 
-void Server::handleMessage( int index )
+void Server::_handleAlive( const Request &req, Response &res ) const
 {
-  char msg[MSG_LENGTH];
+    Json status = {
+        {"status", "online"},
+        {"started_at", _startedAt},
+        {"timestamp", _getCurrentTimestamp()}
+    };
 
-  memset(msg, 0, MSG_LENGTH);
-  int flag = recv(users[index].conn, msg, sizeof(msg), 0);
-
-  if (flag == -1 || flag == 0)
-  {
-    std::cout << "Client disconnected!" << std::endl;
-
-    if (users[index].state != User::status::connected)
-    {
-      userNames.erase((char *)users[index].login);
-      users.erase(index);
-      users[index].state = User::status::disconnected;
-    }
-    else
-    {
-      users[index].state = User::status::disconnected;
-      if (std::string((char *)users[index].name) != "")
-      {
-        sprintf(msg, "           %s ливнул с ацкого сервера!\r\n", users[index].name);
-        sendAllUsers(msg);
-      }
-    }
-    return;
-  }
-
-  if (users[index].state != User::status::auth_password &&
-     users[index].state != User::status::registered_password)
-    std::cout << msg << std::endl;
-
-  std::string strMsg = msg;
-  std::string addon;
-
-  switch (users[index].state)
-  {
-  case User::status::auth_login:
-    strncpy((char *)users[index].login, msg, 64);
-    users[index].login[64] = 0;
-
-    addon = (char *)users[index].login;
-    if (userNames.find(strMsg) != userNames.end())
-    {
-      SOCKET temp = users[index].conn;;
-      users[index] = userNames[addon];
-      users[index].conn = temp;
-      sendMessage(index, "\r\nВведите пароль: ");
-      users[index].state = User::status::auth_password;
-    }
-    else
-    {
-      userNames[addon] = users[index];
-      sendMessage(index, "\r\nПридумайте пароль: ");
-      users[index].state = User::status::registered_password;
-    }
-    break;
-  case User::status::auth_password:
-    addon = (char *)users[index].login;
-    if (strcmp(SHA256(strMsg).c_str(), userNames[addon].hash) == 0)
-    {
-      sendMessage(index, "\r\nПодключено!\r\n");
-      users[index].state = User::status::connected;
-      sprintf(msg, "           %s зашел на ацкий сервер\r\n", users[index].name);
-      sendAllUsers(msg);
-    }
-    else
-    {
-      sendMessage(index, "\r\nНеверный пароль!\r\n");
-    }
-    break;
-  case User::status::registered_password:
-    strncpy((char *)users[index].hash, SHA256(strMsg).c_str(), 64);
-    users[index].hash[64] = 0;
-    users[index].state = User::status::registered_name;
-    sendMessage(index, "\r\nВведите имя (до 32 символов): ");
-    break;
-  case User::status::registered_name:
-    strncpy((char *)users[index].name, strMsg.c_str(), 32);
-    users[index].name[32] = 0;
-    addon = (char *)users[index].login;
-    userNames[addon] = users[index];
-    sendMessage(index, "\r\nЗарегистрировано!\r\n");
-    users[index].state = User::status::connected;
-    sprintf(msg, "           %s зашел на ацкий сервер\r\n", users[index].name);
-    sendAllUsers(msg);
-    break;
-  case User::status::connected:
-    for (const auto &user : users)
-    {
-      if (user.second.state == User::status::connected)
-      {
-        if (user.first == index)
-        {
-          char msgBetter[MSG_LENGTH] = {0};
-          sprintf(msgBetter, "%s: %s\r\n", "You", msg);
-          send(user.second.conn, msgBetter, sizeof(msgBetter), 0);
-        }
-        else
-        {
-          char msgBetter[MSG_LENGTH] = {0};
-          sprintf(msgBetter, "%s: %s\r\n", users[index].name, msg);
-          send(user.second.conn, msgBetter, sizeof(msgBetter), 0);
-        }
-      }
-    }
-    break;
-  }
+    res.status = StatusCode::OK_200;
+    res.set_content(status.dump(), "application/json");
 }
 
-void Server::sendAllUsers( const std::string &msg )
-{
-  for (const auto &user : users)
-  {
-    if (user.second.state == User::status::connected)
-      sendMessage(user.first, msg);
-  }
+void Server::_setupHandlers( void ) {
+    _server->Get("/api/alive", [&]( const Request &req, Response &res ) {
+        _handleAlive(req, res);
+    });
 }
-
-void Server::sendMessage( int index, const std::string &msg )
-{
-  if (state == Server::status::open && users[index].state != User::status::disconnected)
-    send(users[index].conn, msg.c_str(), (int)msg.length(), 0);
-}
-
-void Server::stop( void )
-{
-  state = status::close;
-  closesocket(listener);
-
-  for (const auto &handle : userThreads)
-    WaitForSingleObject(handle.second, INFINITE);
-
-  userThreads.clear();
-  users.clear();
-}
-
-Server::status Server::restart( void )
-{
-  if (state == status::open)
-    stop();
-  return start();
-}
-
-Server::~Server( void )
-{
-  if (state == status::open)
-    stop();
-  WSACleanup();
-}
-#endif

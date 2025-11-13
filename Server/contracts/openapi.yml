@@ -1,0 +1,66 @@
+openapi: 3.1.1
+info:
+  title: API для сервера чата
+  description: |
+    API для сервера чата.
+    Предоставляет эндпоинты для регистрации и входа, а также
+    для управления сообщениями (отправка нового, изменение старых, получение новых непрочитанных)
+  version: 0.0.1
+  contact:
+    email: usikov_andru@mail.ru
+    name: Andrew Usikov
+    url: https://t.me/CGSGAU3
+
+servers:
+- url: http://localhost:8080
+  description: Сервер разработки
+
+tags:
+- name: system
+  description: Получение информации о состоянии сервера
+
+paths:
+  /api/alive:
+    get:
+      tags:
+      - system
+      summary: Получение информации о сервере
+      description: |
+        Получает информацию о дате и времени запуска сервера и текущем времени на сервере.
+        Возвращает сообщение с соответствующими полями.
+      operationId: ifAlive
+      responses:
+        '200':
+          description: Сообщение о состоянии сервера получено
+          content:
+            application/json:
+              schema:
+              $ref: '#/components/schemas/AliveResponse'
+
+components:
+  schemas:
+    AliveResponse:
+      type: object
+      required:
+      - status
+      - started_at
+      - timestamp
+      properties:
+        status:
+          type: string
+          enum:
+          - online
+          description: Статус сервера
+        started_at:
+          type: string
+          format: date-time
+          description: Время запуска сервера
+        timestamp:
+          type: string
+          format: date-time
+          description: Локальное время на сервере
+      example:
+        status: online
+        started_at: 2025-11-13 03:57:49
+        timestamp: "2025-11-13 04:19:08"
+

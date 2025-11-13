@@ -4,7 +4,7 @@
 #include "sha256.h"
 
 Database::Database( const std::string &name ) : 
-    _db(name, SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE), opened(true)
+    _db(name, SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE)
 {
     try
     {
@@ -27,12 +27,19 @@ Database::Database( const std::string &name ) :
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             ))");
 
+        _db.exec(R"(
+                CREATE TABLE auth_tokens (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                token TEXT UNIQUE NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            ))");
+
         spdlog::trace("Database and tables are created or opened successfully!");
     } 
     catch ( const std::exception &e )
     {
         spdlog::error(std::string("Create SQLite error: ") + e.what());
-        opened = false;
     }
 }
 
@@ -122,7 +129,7 @@ auto Database::getUserByLogin( const std::string &login ) const -> std::optional
             
             return user;
         }        
-    } catch (const std::exception& e) {
+    } catch ( const std::exception &e ) {
         spdlog::warn(std::string("Error finding user by login: ") + e.what());
     }
     
@@ -149,7 +156,7 @@ auto Database::getUserById( const int id ) const -> std::optional<User>
             
             return user;
         }        
-    } catch (const std::exception& e) {
+    } catch ( const std::exception &e ) {
         spdlog::warn(std::string("Error finding user by login: ") + e.what());
     }
     

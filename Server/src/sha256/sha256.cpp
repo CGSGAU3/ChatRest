@@ -1,5 +1,7 @@
 #include <iostream>
 #include <vector>
+#include <bit>
+#include <algorithm>
 
 #include "sha256.h"
 
@@ -19,7 +21,7 @@ std::string SHA256( const char *Msg, uint64_t length )
     }
     while (Res.size() < 8)
       Res.push_back(0);
-    reverse(Res.begin(), Res.end());
+    std::reverse(Res.begin(), Res.end());
 
     return Res;
   };
@@ -35,7 +37,7 @@ std::string SHA256( const char *Msg, uint64_t length )
     }
     while (Res.size() < 64)
       Res.push_back(0);
-    reverse(Res.begin(), Res.end());
+    std::reverse(Res.begin(), Res.end());
 
     return Res;
   };
@@ -119,8 +121,8 @@ std::string SHA256( const char *Msg, uint64_t length )
     // Generate additional 48 words
     for (uint j = 16; j < 64; j++)
     {
-      uint s0 = (_rotr(Words[j - 15], 7)) ^ (_rotr(Words[j - 15], 18)) ^ (Words[j - 15] >> 3);
-      uint s1 = (_rotr(Words[j - 2], 17)) ^ (_rotr(Words[j - 2], 19)) ^ (Words[j - 2] >> 10);
+      uint s0 = (std::rotr(Words[j - 15], 7)) ^ (std::rotr(Words[j - 15], 18)) ^ (Words[j - 15] >> 3);
+      uint s1 = (std::rotr(Words[j - 2], 17)) ^ (std::rotr(Words[j - 2], 19)) ^ (Words[j - 2] >> 10);
 
       Words[j] = Words[j - 16] + s0 + Words[j - 7] + s1;
     }
@@ -140,10 +142,10 @@ std::string SHA256( const char *Msg, uint64_t length )
     for (uint j = 0; j < 64; j++)
     {
       uint
-        E0 = (_rotr(a, 2)) ^ (_rotr(a, 13)) ^ (_rotr(a, 22)),
+        E0 = (std::rotr(a, 2)) ^ (std::rotr(a, 13)) ^ (std::rotr(a, 22)),
         Ma = (a & b) ^ (a & c) ^ (b & c),
         t2 = E0 + Ma,
-        E1 = (_rotr(e, 6)) ^ (_rotr(e, 11)) ^ (_rotr(e, 25)),
+        E1 = (std::rotr(e, 6)) ^ (std::rotr(e, 11)) ^ (std::rotr(e, 25)),
         Ch = (e & f) ^ ((~e) & g),
         t1 = h + E1 + Ch + K[j] + Words[j];
 
@@ -191,7 +193,7 @@ std::string SHA224( const char *Msg, uint64_t length )
     }
     while (Res.size() < 8)
       Res.push_back(0);
-    reverse(Res.begin(), Res.end());
+    std::reverse(Res.begin(), Res.end());
 
     return Res;
   };
@@ -207,7 +209,7 @@ std::string SHA224( const char *Msg, uint64_t length )
     }
     while (Res.size() < 64)
       Res.push_back(0);
-    reverse(Res.begin(), Res.end());
+    std::reverse(Res.begin(), Res.end());
 
     return Res;
   };
@@ -291,8 +293,8 @@ std::string SHA224( const char *Msg, uint64_t length )
     // Generate additional 48 words
     for (uint j = 16; j < 64; j++)
     {
-      uint s0 = (_rotr(Words[j - 15], 7)) ^ (_rotr(Words[j - 15], 18)) ^ (Words[j - 15] >> 3);
-      uint s1 = (_rotr(Words[j - 2], 17)) ^ (_rotr(Words[j - 2], 19)) ^ (Words[j - 2] >> 10);
+      uint s0 = (std::rotr(Words[j - 15], 7)) ^ (std::rotr(Words[j - 15], 18)) ^ (Words[j - 15] >> 3);
+      uint s1 = (std::rotr(Words[j - 2], 17)) ^ (std::rotr(Words[j - 2], 19)) ^ (Words[j - 2] >> 10);
 
       Words[j] = Words[j - 16] + s0 + Words[j - 7] + s1;
     }
@@ -312,10 +314,10 @@ std::string SHA224( const char *Msg, uint64_t length )
     for (uint j = 0; j < 64; j++)
     {
       uint
-        E0 = (_rotr(a, 2)) ^ (_rotr(a, 13)) ^ (_rotr(a, 22)),
+        E0 = (std::rotr(a, 2)) ^ (std::rotr(a, 13)) ^ (std::rotr(a, 22)),
         Ma = (a & b) ^ (a & c) ^ (b & c),
         t2 = E0 + Ma,
-        E1 = (_rotr(e, 6)) ^ (_rotr(e, 11)) ^ (_rotr(e, 25)),
+        E1 = (std::rotr(e, 6)) ^ (std::rotr(e, 11)) ^ (std::rotr(e, 25)),
         Ch = (e & f) ^ ((~e) & g),
         t1 = h + E1 + Ch + K[j] + Words[j];
 
