@@ -28,7 +28,7 @@ Database::Database( const std::string &name ) :
             ))");
 
         _db.exec(R"(
-                CREATE TABLE auth_tokens (
+                CREATE TABLE IF NOT EXISTS auth_tokens (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
                 token TEXT UNIQUE NOT NULL,
