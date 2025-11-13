@@ -5,7 +5,7 @@
 #include <SQLiteCpp/SQLiteCpp.h>
 #include <spdlog/spdlog.h>
 
-struct User final
+struct User
 {
     int id;
     std::string login;
@@ -15,7 +15,7 @@ struct User final
     bool isOnline;
 };
 
-struct Message final
+struct Message
 {
     int id;
     int userId;
@@ -23,7 +23,7 @@ struct Message final
     std::string timestamp;
 };
 
-struct Token final
+struct Token
 {
     int id;
     int userId;
@@ -34,26 +34,43 @@ class Database final
 {
 private:
     SQLite::Database _db;
+
+    struct Error;
+
+    static auto generateToken( const int len = 32 ) -> std::string;
+    auto _addToken( const Token &token ) -> Error;
+    auto _findToken( const std::string &token ) -> std::optional<Token>;
   
 public:
-    struct Error final
+    struct Error
     {
-        bool isError;
+        bool isError {};
         std::string message;
+        int errorId {};
 
-        Error( bool errorFlag = false, const std::string &msg = "" ) : 
-            isError(errorFlag), message(msg) {}
+        Error( bool errorFlag = false, const std::string &msg = "", const int id = 0 ) : 
+            isError(errorFlag), message(msg), errorId(id) {}
 
         operator bool( void ) const
         {
             return isError;
+        }
+
+        Error & operator =( const bool val )
+        {
+            isError = val;
+            return *this;
         }
     };
 
     Database( const std::string &name = "a.db" );
 
     auto addUser( const User &user ) -> Error;
+    auto loginUser( const std::string &login, const std::string &password ) -> std::pair<Token, Error>;
+    auto logoutUser( const std::string &token ) -> Error;
     auto getAllUsers( void ) const -> std::vector<User>;
     auto getUserByLogin( const std::string &login ) const -> std::optional<User>;
     auto getUserById( const int id ) const -> std::optional<User>;
+
+    ~Database( void );
 };

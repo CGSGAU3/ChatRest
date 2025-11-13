@@ -3,7 +3,7 @@
 enum struct ErrorCode
 {
     kBadRequest = 400,
-    kNotFound = 404,
+    kUnauthorized = 401,
     kValidationError = 422,
     kInternal = 500,
 };
@@ -21,7 +21,7 @@ public:
     explicit ErrorResponseBuilder( httplib::Response &res ) : _resp(res) {}
 
     void badRequest( const std::string &message );
-    void notFound( const std::string &message );
+    void unauthorized( const std::string &message );
     void validationError( const std::string &message );
     void internal( const std::string &message );
 };

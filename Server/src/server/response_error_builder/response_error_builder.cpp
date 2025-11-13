@@ -6,9 +6,9 @@ void ErrorResponseBuilder::badRequest( const std::string &message )
     _buildError("bad_request", message, ErrorCode::kBadRequest);
 }
 
-void ErrorResponseBuilder::notFound( const std::string &message )
+void ErrorResponseBuilder::unauthorized( const std::string &message )
 {
-    _buildError("not_found", message, ErrorCode::kNotFound);
+    _buildError("not_found", message, ErrorCode::kUnauthorized);
 }
 
 void ErrorResponseBuilder::validationError( const std::string &message )

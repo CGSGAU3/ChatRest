@@ -4,6 +4,8 @@
 #include <spdlog/spdlog.h>
 
 #include "server.h"
+#include "response_converter.h"
+#include "response_error_builder.h"
 
 Server::Server( const std::string &host, const int port, const std::string &dbName ) :
     _db(dbName), _server(nullptr), _host(host), _port(port) {}
@@ -57,25 +59,136 @@ void Server::_handleAlive( const Request &req, Response &res ) const
     res.set_content(status.dump(), "application/json");
 }
 
-void Server::_handleRegister( const Request &req, Response &res ) const
+void Server::_handleRegister( const Request &req, Response &res )
 {
+    try
+    {
+        auto inputUser = Json::parse(req.body);
+        User user {};
+
+        user.login = inputUser["login"];
+        user.password = inputUser["password"];
+        user.firstName = inputUser["first_name"];
+        user.lastName = inputUser["last_name"];
+
+        auto err = _db.addUser(user);
+
+        if (err)
+        {
+            ErrorResponseBuilder(res).badRequest(err.message);
+            spdlog::warn(err.message);
+            return;
+        }
+
+        Json status = {
+            {"status", "success"}
+        };
+
+        res.status = StatusCode::OK_200;
+        res.set_content(status.dump(), "application/json");
+    }
+    catch ( const std::exception &e )
+    {
+        spdlog::warn(e.what());
+        ErrorResponseBuilder(res).badRequest("Error while parsing user!");
+    }
 }
 
-void Server::_handleLogin( const Request &req, Response &res ) const
+void Server::processErrors( Response &res, const Database::Error &err )
 {
+    if (!err)
+    {
+        return;
+    }
+
+    switch (static_cast<StatusCode>(err.errorId))
+    {
+    case StatusCode::BadRequest_400:
+        ErrorResponseBuilder(res).badRequest(err.message);
+        break;
+    case StatusCode::Unauthorized_401:
+        ErrorResponseBuilder(res).unauthorized(err.message);
+        break;
+    case StatusCode::InternalServerError_500:
+    default:
+        ErrorResponseBuilder(res).internal(err.message);
+        break;
+    }
+    spdlog::warn(err.message);
+}
+
+void Server::_handleLogin( const Request &req, Response &res )
+{
+    try
+    {
+        auto input = Json::parse(req.body);
+        std::string login = input["login"];
+        std::string password = input["password"];
+
+        auto [token, err] = _db.loginUser(login, password);
+
+        if (err)
+        {
+            processErrors(res, err);
+            return;
+        }
+
+        Json payload = {
+            {"status", "success"},
+            {"auth-token", token.token}
+        };
+
+        res.status = StatusCode::OK_200;
+        res.set_content(payload.dump(), "application/json");
+    }
+    catch ( const std::exception &e )
+    {
+        spdlog::warn(e.what());
+        ErrorResponseBuilder(res).badRequest("Error while parsing user!");
+    }
+}
+
+void Server::_handleLogout( const Request &req, Response &res )
+{
+    const std::string token = getAuthorizationToken(req);
+    auto err = _db.logoutUser(token);
+
+    if (err)
+    {
+        processErrors(res, err);
+        return;
+    }
+
+    Json status = {
+        {"status", "success"}
+    };
+
+    res.status = StatusCode::OK_200;
+    res.set_content(status.dump(), "application/json");
+}
+
+auto Server::getAuthorizationToken( const Request &req ) -> std::string
+{
+    return req.get_header_value("Authorization-Token");
 }
 
 void Server::_setupHandlers( void )
 {
+    // System endpoints
     _server->Get("/api/alive", [&]( const Request &req, Response &res ) {
         _handleAlive(req, res);
     });
 
+    // Authentication endpoints
     _server->Post("/api/auth/register", [&]( const Request &req, Response &res ) {
         _handleRegister(req, res);
     });
 
     _server->Post("/api/auth/login", [&]( const Request &req, Response &res ) {
         _handleLogin(req, res);
+    });
+
+    _server->Post("/api/auth/logout", [&]( const Request &req, Response &res ) {
+        _handleLogout(req, res);
     });
 }

@@ -26,9 +26,13 @@ private:
     int _port;
     std::string _startedAt;
 
+    static auto getAuthorizationToken( const Request &req ) -> std::string;
+    static void processErrors( Response &res, const Database::Error &err );
+
     void _handleAlive( const Request &req, Response &res ) const;
-    void _handleRegister( const Request &req, Response &res ) const;
-    void _handleLogin( const Request &req, Response &res ) const;
+    void _handleRegister( const Request &req, Response &res );
+    void _handleLogin( const Request &req, Response &res );
+    void _handleLogout( const Request &req, Response &res );
 
     auto _getCurrentTimestamp( void ) const -> std::string;
     void _setupHandlers( void );
