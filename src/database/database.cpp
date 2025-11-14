@@ -108,7 +108,7 @@ auto Database::addUser( const User &user ) -> Error
     return err;
 }
 
-auto Database::_findToken( const std::string &token ) -> std::optional<Token>
+auto Database::_findToken( const std::string &token ) const -> std::optional<Token>
 {
     try
     {
@@ -274,6 +274,21 @@ auto Database::logoutUser( const std::string &token ) -> Error
     return err;
 }
 
+auto Database::getUserByToken( const std::string &token ) const -> std::optional<User>
+{
+    auto tokOpt = _findToken(SHA256(token));
+    Error err;
+
+    if (!tokOpt)
+    {
+        spdlog::warn("Token " + token + " does not exist!");
+        return std::nullopt;
+    }
+
+    Token tok = tokOpt.value();
+    return getUserById(tok.userId);
+}
+
 auto Database::getAllUsers( void ) const -> std::vector<User>
 {
     std::vector<User> users;
@@ -281,6 +296,36 @@ auto Database::getAllUsers( void ) const -> std::vector<User>
     try
     {
         SQLite::Statement query(_db, "SELECT * FROM users");
+            
+        while (query.executeStep())
+        {
+            User user;
+
+            user.id = query.getColumn("id");
+            user.login = query.getColumn("login").getString();
+            user.password = query.getColumn("password").getString();
+            user.firstName = query.getColumn("first_name").getString();
+            user.lastName = query.getColumn("last_name").getString();
+            user.isOnline = (int)query.getColumn("is_online");
+
+            users.emplace_back(user);
+        }
+    }
+    catch ( const std::exception &e )
+    {
+        spdlog::error(std::string("Error while get all users: ") + e.what());
+    }
+
+    return users;
+}
+
+auto Database::getOnlineUsers( void ) const -> std::vector<User>
+{
+    std::vector<User> users;
+
+    try
+    {
+        SQLite::Statement query(_db, "SELECT * FROM users WHERE is_online = true");
             
         while (query.executeStep())
         {

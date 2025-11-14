@@ -10,7 +10,7 @@ class ChatManager {
     // Инициализация чата
     async init() {
         // Проверяем авторизацию
-        if (!Utils.isAuthenticated()) {
+        if (!(await Utils.isAuthenticated())) {
             window.location.href = '/';
             return;
         }
@@ -20,16 +20,16 @@ class ChatManager {
             await this.loadUserData();
             
             // Загружаем историю сообщений
-            await this.loadMessages();
+            /// await this.loadMessages();
             
             // Загружаем онлайн пользователей
             await this.loadOnlineUsers();
             
             // Загружаем статистику
-            await this.loadStats();
+            /// await this.loadStats();
             
             // Настраиваем обновления
-            this.setupAutoRefresh();
+            /// this.setupAutoRefresh();
             
             // Настраиваем обработчики событий
             this.setupEventListeners();
@@ -48,7 +48,7 @@ class ChatManager {
         try {
             const response = await fetch('/api/users/me', {
                 headers: {
-                    'Authorization': `Bearer ${Utils.getToken()}`
+                    'Authorization-Token': `${await Utils.getToken()}`
                 }
             });
 
@@ -74,7 +74,7 @@ class ChatManager {
         try {
             const response = await fetch(`/api/messages?limit=100`, {
                 headers: {
-                    'Authorization': `Bearer ${Utils.getToken()}`
+                    'Authorization-Token': `${await Utils.getToken()}`
                 }
             });
 
@@ -214,13 +214,15 @@ class ChatManager {
         try {
             const response = await fetch('/api/users/online', {
                 headers: {
-                    'Authorization': `Bearer ${Utils.getToken()}`
+                    'Authorization-Token': `${await Utils.getToken()}`
                 }
             });
 
             if (!response.ok) return;
 
             const data = await response.json();
+
+            alert(JSON.stringify(data));
             this.displayOnlineUsers(data.online_users);
             document.getElementById('onlineCount').textContent = data.total_online;
             
@@ -416,6 +418,11 @@ class ChatManager {
 let chatManager;
 
 function initChat() {
+    if (typeof AuthManager === 'undefined') {
+        console.error('AuthManager not found! Check script loading order.');
+        return;
+    }
+
     chatManager = new ChatManager();
     chatManager.init();
 }

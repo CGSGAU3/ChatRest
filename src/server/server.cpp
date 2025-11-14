@@ -57,14 +57,14 @@ void Server::run( void )
     _setupHandlers();
     _setupStaticHandlers();
 
-    _startedAt = _getCurrentTimestamp();
+    _startedAt = getCurrentTimestamp();
 
     if (!_server->listen(_host, _port)) {
         throw std::runtime_error("Server run error!");
     }
 }
 
-auto Server::_getCurrentTimestamp( void ) const -> std::string
+auto Server::getCurrentTimestamp( void ) -> std::string
 {
     auto now = std::chrono::system_clock::now();
     auto localNow = std::chrono::current_zone()->to_local(now);
@@ -73,12 +73,12 @@ auto Server::_getCurrentTimestamp( void ) const -> std::string
     return std::format(R"({:%Y-%m-%d %H:%M:%S})", localSeconds);
 }
 
-void Server::_handleAlive( const Request &req, Response &res ) const
+void Server::_handleAlive( const Request &req, Response &res )
 {
     Json status = {
         {"status", "online"},
         {"started_at", _startedAt},
-        {"timestamp", _getCurrentTimestamp()}
+        {"timestamp", getCurrentTimestamp()}
     };
 
     res.status = StatusCode::OK_200;
@@ -193,6 +193,54 @@ void Server::_handleLogout( const Request &req, Response &res )
     res.set_content(status.dump(), "application/json");
 }
 
+void Server::_handleMe( const Request &req, Response &res )
+{
+    const std::string token = getAuthorizationToken(req);
+    auto userOpt = _db.getUserByToken(token);
+
+    if (!userOpt)
+    {
+        ErrorResponseBuilder(res).unauthorized("Unknown token!");
+        spdlog::warn("Unknown token '" + token + "'!");
+        return;
+    }
+
+    Json user = {
+        {"login", userOpt.value().login},
+        {"first_name", userOpt.value().firstName},
+        {"last_name", userOpt.value().lastName},
+    };
+
+    res.status = StatusCode::OK_200;
+    res.set_content(user.dump(), "application/json");
+}
+
+void Server::_handleOnline( const Request &req, Response &res )
+{
+    const std::string token = getAuthorizationToken(req);
+
+    if (!_db.isTokenExists(token))
+    {
+        ErrorResponseBuilder(res).unauthorized("Unknown token!");
+        spdlog::warn("Unknown token '" + token + "'!");
+        return;
+    }
+
+    auto users = _db.getOnlineUsers();
+    Json usersJsons = Json::array();
+
+    std::transform(users.begin(), users.end(), std::back_inserter(usersJsons), 
+                   []( const User &user ) {return user.toJson();});
+
+    Json usersOnline = {
+        {"total_online", users.size()},
+        {"online_users", usersJsons}
+    };
+
+    res.status = StatusCode::OK_200;
+    res.set_content(usersOnline.dump(), "applciation/json");
+}
+
 auto Server::getAuthorizationToken( const Request &req ) -> std::string
 {
     return req.get_header_value("Authorization-Token");
@@ -233,6 +281,15 @@ void Server::_setupHandlers( void )
 
     _server->Post("/api/auth/logout", [&]( const Request &req, Response &res ) {
         _handleLogout(req, res);
+    });
+
+    // Users endpoints
+    _server->Get("/api/users/me", [&]( const Request &req, Response &res ) {
+        _handleMe(req, res);
+    });
+
+    _server->Get("/api/users/online", [&]( const Request &req, Response &res ) {
+        _handleOnline(req, res);
     });
 }
 

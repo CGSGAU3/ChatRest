@@ -20,7 +20,7 @@ class AuthManager {
             } else {
                 return { 
                     success: false, 
-                    error: data.error || 'Ошибка входа' 
+                    error: data.message || 'Ошибка входа' 
                 };
             }
         } catch (error) {

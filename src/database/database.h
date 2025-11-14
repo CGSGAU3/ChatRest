@@ -4,6 +4,7 @@
 
 #include <SQLiteCpp/SQLiteCpp.h>
 #include <spdlog/spdlog.h>
+#include <nlohmann/json.hpp>
 
 struct User
 {
@@ -13,6 +14,24 @@ struct User
     std::string firstName;
     std::string lastName;
     bool isOnline;
+
+    auto toJson( bool showPass = false ) const -> nlohmann::json
+    {
+        nlohmann::json res = {
+            {"login", login},
+            {"password", password},
+            {"first_name", firstName},
+            {"last_nane", lastName},
+            {"is_online", isOnline},
+        };
+
+        if (!showPass)
+        {
+            res.erase("password");
+        }
+
+        return res;
+    }
 };
 
 struct Message
@@ -39,7 +58,7 @@ private:
 
     static auto generateToken( const int len = 32 ) -> std::string;
     auto _addToken( const Token &token ) -> Error;
-    auto _findToken( const std::string &token ) -> std::optional<Token>;
+    auto _findToken( const std::string &token ) const -> std::optional<Token>;
   
 public:
     struct Error
@@ -68,9 +87,12 @@ public:
     auto addUser( const User &user ) -> Error;
     auto loginUser( const std::string &login, const std::string &password ) -> std::pair<Token, Error>;
     auto logoutUser( const std::string &token ) -> Error;
+
     auto getAllUsers( void ) const -> std::vector<User>;
+    auto getOnlineUsers( void ) const -> std::vector<User>;
     auto getUserByLogin( const std::string &login ) const -> std::optional<User>;
     auto getUserById( const int id ) const -> std::optional<User>;
+    auto getUserByToken( const std::string &token ) const -> std::optional<User>;
 
     auto isTokenExists( const std::string &token ) -> bool;
 

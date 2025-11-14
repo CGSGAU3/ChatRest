@@ -28,15 +28,17 @@ private:
 
     static auto readFile( const std::string &filename ) -> std::string;
 
+    static auto getCurrentTimestamp( void ) -> std::string;
     static auto getAuthorizationToken( const Request &req ) -> std::string;
     static void processErrors( Response &res, const Database::Error &err );
 
-    void _handleAlive( const Request &req, Response &res ) const;
+    void _handleAlive( const Request &req, Response &res );
     void _handleRegister( const Request &req, Response &res );
     void _handleLogin( const Request &req, Response &res );
     void _handleLogout( const Request &req, Response &res );
+    void _handleMe( const Request &req, Response &res );
+    void _handleOnline( const Request &req, Response &res );
 
-    auto _getCurrentTimestamp( void ) const -> std::string;
     void _setupHandlers( void );
     void _setupStaticHandlers( void );
 };
