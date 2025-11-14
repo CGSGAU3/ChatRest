@@ -2,5 +2,5 @@
 
 auto ResponseConverter::toJson( const ErrorSchema &error ) -> Json
 {
-    return Json {{"error", error.error}, {"message", error.message}};
+    return Json {{"status", "error"}, {"error", error.error}, {"message", error.message}};
 }

@@ -26,6 +26,8 @@ private:
     int _port;
     std::string _startedAt;
 
+    static auto readFile( const std::string &filename ) -> std::string;
+
     static auto getAuthorizationToken( const Request &req ) -> std::string;
     static void processErrors( Response &res, const Database::Error &err );
 
@@ -36,5 +38,5 @@ private:
 
     auto _getCurrentTimestamp( void ) const -> std::string;
     void _setupHandlers( void );
-
+    void _setupStaticHandlers( void );
 };

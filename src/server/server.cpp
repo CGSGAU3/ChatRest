@@ -1,5 +1,9 @@
 #include <chrono>
 #include <format>
+#include <filesystem>
+#include <fstream>
+#include <sstream>
+#include <iterator>
 
 #include <spdlog/spdlog.h>
 
@@ -9,6 +13,27 @@
 
 Server::Server( const std::string &host, const int port, const std::string &dbName ) :
     _db(dbName), _server(nullptr), _host(host), _port(port) {}
+
+auto Server::readFile( const std::string &filename ) -> std::string
+{
+    std::filesystem::path fullPath = __FILE__;
+
+    fullPath = fullPath.parent_path().parent_path();
+    fullPath += "/public/" + filename;
+
+    std::ifstream file(fullPath);
+
+    if (!file)
+    {
+        return ""; 
+    }
+    std::string content(
+        (std::istreambuf_iterator<char>(file)),
+        std::istreambuf_iterator<char>()
+    );
+
+    return content;
+}
 
 void Server::run( void )
 {
@@ -30,6 +55,7 @@ void Server::run( void )
     _server->set_default_headers(corsHeaders);
 
     _setupHandlers();
+    _setupStaticHandlers();
 
     _startedAt = _getCurrentTimestamp();
 
@@ -135,7 +161,7 @@ void Server::_handleLogin( const Request &req, Response &res )
 
         Json payload = {
             {"status", "success"},
-            {"auth-token", token.token}
+            {"auth_token", token.token}
         };
 
         res.status = StatusCode::OK_200;
@@ -179,6 +205,23 @@ void Server::_setupHandlers( void )
         _handleAlive(req, res);
     });
 
+    _server->Post("/api/check_token", [&]( const Request &req, Response &res ) {
+        try
+        {
+            std::string token = Json::parse(req.body)["token"];
+            Json result = {
+                {"check_status", _db.isTokenExists(token)} 
+            };
+
+            res.status = StatusCode::OK_200;
+            res.set_content(result.dump(), "application/json");
+        }
+        catch ( const std::exception &e )
+        {
+            ErrorResponseBuilder(res).badRequest(e.what());
+        }
+    });
+
     // Authentication endpoints
     _server->Post("/api/auth/register", [&]( const Request &req, Response &res ) {
         _handleRegister(req, res);
@@ -190,5 +233,40 @@ void Server::_setupHandlers( void )
 
     _server->Post("/api/auth/logout", [&]( const Request &req, Response &res ) {
         _handleLogout(req, res);
+    });
+}
+
+void Server::_setupStaticHandlers( void )
+{
+    _server->Get("/", [&]( const Request& req, Response& res ) {
+        res.set_content(readFile("index.html"), "text/html");
+    });
+
+    _server->Get("/css/style.css", [&]( const Request& req, Response& res ) {
+        res.set_content(readFile("css/style.css"), "text/css");
+    });
+
+    _server->Get("/js/utils.js", [&]( const Request& req, Response& res ) {
+        res.set_content(readFile("/js/utils.js"), "application/javascript");
+    });
+
+    _server->Get("/js/auth.js", [&]( const Request& req, Response& res ) {
+        res.set_content(readFile("/js/auth.js"), "application/javascript");
+    });
+
+    _server->Get("/register", [&]( const Request& req, Response& res ) {
+        res.set_content(readFile("register.html"), "text/html");
+    });
+
+    _server->Get("/chat", [&]( const Request& req, Response& res ) {
+        res.set_content(readFile("chat.html"), "text/html");
+    });
+
+    _server->Get("/css/chat.css", [&]( const Request& req, Response& res ) {
+        res.set_content(readFile("css/chat.css"), "text/css");
+    });
+
+    _server->Get("/js/chat.js", [&]( const Request& req, Response& res ) {
+        res.set_content(readFile("js/chat.js"), "application/javascript");
     });
 }

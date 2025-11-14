@@ -137,6 +137,11 @@ auto Database::_findToken( const std::string &token ) -> std::optional<Token>
     return std::nullopt;
 }
 
+auto Database::isTokenExists( const std::string &token ) -> bool
+{
+    return static_cast<bool>(_findToken(SHA256(token)));
+}
+
 auto Database::_addToken( const Token &token ) -> Error
 {
     Error err;

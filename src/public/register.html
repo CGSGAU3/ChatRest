@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чат - Регистрация</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="login-card">
+            <div class="header">
+                <h1>📨 Регистрация</h1>
+                <p>Создайте новый аккаунт</p>
+            </div>
+
+            <form id="registerForm" class="form">
+                <div class="form-group">
+                    <label for="login">Логин:*</label>
+                    <input 
+                        type="text" 
+                        id="login" 
+                        name="login" 
+                        required 
+                        autocomplete="username"
+                        placeholder="Придумайте логин"
+                        minlength="3"
+                        maxlength="20"
+                    >
+                    <div class="hint">От 3 до 20 символов (только буквы, цифры и _)</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Пароль:*</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        required 
+                        autocomplete="new-password"
+                        placeholder="Придумайте пароль"
+                        minlength="6"
+                    >
+                    <div class="hint">Не менее 6 символов</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">Подтверждение пароля:*</label>
+                    <input 
+                        type="password" 
+                        id="confirmPassword" 
+                        name="confirmPassword" 
+                        required 
+                        autocomplete="new-password"
+                        placeholder="Повторите пароль"
+                    >
+                    <div id="passwordMatch" class="hint hidden">Пароли должны совпадать</div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="firstName">Имя:*</label>
+                        <input 
+                            type="text" 
+                            id="firstName" 
+                            name="firstName" 
+                            required 
+                            autocomplete="given-name"
+                            placeholder="Ваше имя"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="lastName">Фамилия:*</label>
+                        <input 
+                            type="text" 
+                            id="lastName" 
+                            name="lastName" 
+                            required 
+                            autocomplete="family-name"
+                            placeholder="Ваша фамилия"
+                        >
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="registerBtn">
+                    <span class="btn-text">Зарегистрироваться</span>
+                    <span class="btn-loading" style="display: none;">Регистрация...</span>
+                </button>
+            </form>
+
+            <div class="footer">
+                <p>Уже есть аккаунт? 
+                    <a href="/" class="link">Войти</a>
+                </p>
+            </div>
+
+            <div id="message" class="message hidden"></div>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/auth.js"></script>
+    <script>
+        // Инициализация страницы регистрации
+        document.addEventListener('DOMContentLoaded', function() {
+            initRegisterPage();
+        });
+    </script>
+</body>
+</html>

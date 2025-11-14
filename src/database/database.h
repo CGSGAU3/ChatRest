@@ -72,5 +72,7 @@ public:
     auto getUserByLogin( const std::string &login ) const -> std::optional<User>;
     auto getUserById( const int id ) const -> std::optional<User>;
 
+    auto isTokenExists( const std::string &token ) -> bool;
+
     ~Database( void );
 };
