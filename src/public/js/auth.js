@@ -72,6 +72,8 @@ class AuthManager {
     }
 }
 
+window.AuthManager = AuthManager;
+
 // Инициализация страницы входа
 function initLoginPage() {
     const loginForm = document.getElementById('loginForm');
