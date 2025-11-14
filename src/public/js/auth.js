@@ -159,14 +159,14 @@ function initRegisterPage() {
         // Скрыть loading
         Utils.setButtonLoading(registerBtn, false);
 
-        if (result.success) {
+        if (result.status === "success") {
             Utils.showMessage('message', 'Регистрация успешна! Выполняется вход...', 'success');
             
             // Автоматически входим после регистрации
             setTimeout(async () => {
                 const loginResult = await AuthManager.login(formData.login, formData.password);
                 if (loginResult.success) {
-                    window.location.href = '/chat.html';
+                    window.location.href = '/chat';
                 } else {
                     window.location.href = '/';
                 }

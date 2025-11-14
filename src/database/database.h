@@ -21,7 +21,7 @@ struct User
             {"login", login},
             {"password", password},
             {"first_name", firstName},
-            {"last_nane", lastName},
+            {"last_name", lastName},
             {"is_online", isOnline},
         };
 
@@ -40,6 +40,22 @@ struct Message
     int userId;
     std::string messageText;
     std::string timestamp;
+};
+
+struct MessageJson : public Message
+{
+    User user;
+
+    auto toJson( void ) const -> nlohmann::json
+    {
+        return nlohmann::json {
+            {"id", id},
+            {"user_id", userId},
+            {"message_text", messageText},
+            {"timestamp", timestamp},
+            {"user", user.toJson()}
+        };
+    }
 };
 
 struct Token
@@ -93,6 +109,10 @@ public:
     auto getUserByLogin( const std::string &login ) const -> std::optional<User>;
     auto getUserById( const int id ) const -> std::optional<User>;
     auto getUserByToken( const std::string &token ) const -> std::optional<User>;
+
+    auto sendMessage( const int userId, const std::string &text ) -> Error;
+    auto getLastMessages( const int limit ) -> std::vector<MessageJson>;
+    int getMessageCount( void );
 
     auto isTokenExists( const std::string &token ) -> bool;
 

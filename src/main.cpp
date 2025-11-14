@@ -6,7 +6,7 @@ int main( int argc, char *argv[] )
 
     try
     {
-        Server server("localhost", 8080, "chat.db");
+        Server server("0.0.0.0", 8080, "chat.db");
 
         server.run();
         return EXIT_SUCCESS;

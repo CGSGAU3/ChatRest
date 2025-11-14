@@ -33,11 +33,18 @@ private:
     static void processErrors( Response &res, const Database::Error &err );
 
     void _handleAlive( const Request &req, Response &res );
+
     void _handleRegister( const Request &req, Response &res );
     void _handleLogin( const Request &req, Response &res );
     void _handleLogout( const Request &req, Response &res );
+
     void _handleMe( const Request &req, Response &res );
     void _handleOnline( const Request &req, Response &res );
+    void _handleUsersCount( const Request &req, Response &res );
+    
+    void _handleMessagesPost( const Request &req, Response &res );
+    void _handleMessagesGet( const Request &req, Response &res );
+    void _handleMessagesCount( const Request &req, Response &res );
 
     void _setupHandlers( void );
     void _setupStaticHandlers( void );

@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <iterator>
+#include <regex>
 
 #include <spdlog/spdlog.h>
 
@@ -97,6 +98,15 @@ void Server::_handleRegister( const Request &req, Response &res )
         user.firstName = inputUser["first_name"];
         user.lastName = inputUser["last_name"];
 
+        std::regex loginReg("^[a-zA-Z0-9_]{3,20}$");
+
+        if (!std::regex_match(user.login, loginReg) || user.firstName.length() < 2)
+        {
+            ErrorResponseBuilder(res).badRequest("Login, first and last name should be normal!");
+            spdlog::warn("Incorrect register arguments!");
+            return;
+        }
+
         auto err = _db.addUser(user);
 
         if (err)
@@ -115,7 +125,7 @@ void Server::_handleRegister( const Request &req, Response &res )
     }
     catch ( const std::exception &e )
     {
-        spdlog::warn(e.what());
+        spdlog::warn(std::string(__FILE__) + ":" + std::to_string(__LINE__) + ": " + e.what());
         ErrorResponseBuilder(res).badRequest("Error while parsing user!");
     }
 }
@@ -169,7 +179,7 @@ void Server::_handleLogin( const Request &req, Response &res )
     }
     catch ( const std::exception &e )
     {
-        spdlog::warn(e.what());
+        spdlog::warn(std::string(__FILE__) + ":" + std::to_string(__LINE__) + ": " + e.what());
         ErrorResponseBuilder(res).badRequest("Error while parsing user!");
     }
 }
@@ -241,9 +251,134 @@ void Server::_handleOnline( const Request &req, Response &res )
     res.set_content(usersOnline.dump(), "applciation/json");
 }
 
+void Server::_handleUsersCount( const Request &req, Response &res )
+{
+    const std::string token = getAuthorizationToken(req);
+
+    if (!_db.isTokenExists(token))
+    {
+        ErrorResponseBuilder(res).unauthorized("Unknown token!");
+        spdlog::warn("Unknown token '" + token + "'!");
+        return;
+    }
+
+    int count = _db.getAllUsers().size();
+
+    Json countResp = {
+        {"status", "success"},
+        {"count", count}
+    };
+
+    res.status = StatusCode::OK_200;
+    res.set_content(countResp.dump(), "application/json");
+}
+
 auto Server::getAuthorizationToken( const Request &req ) -> std::string
 {
     return req.get_header_value("Authorization-Token");
+}
+
+void Server::_handleMessagesPost( const Request &req, Response &res )
+{
+    const std::string token = getAuthorizationToken(req);
+    auto userOpt = _db.getUserByToken(token);
+
+    if (!userOpt)
+    {
+        ErrorResponseBuilder(res).unauthorized("Unknown token!");
+        spdlog::warn("Unknown token '" + token + "'!");
+        return;
+    }
+
+    try
+    {
+        Json body = Json::parse(req.body);
+        std::string text = body["message_text"];
+        auto err = _db.sendMessage(userOpt.value().id, text);
+
+        if (err)
+        {
+            processErrors(res, err);
+            return;
+        }
+
+        res.status = StatusCode::OK_200;
+    }
+    catch ( const std::exception &e )
+    {
+        spdlog::warn(std::string(__FILE__) + std::to_string(__LINE__) + e.what());
+        ErrorResponseBuilder(res).badRequest("Error while send message!");
+    }
+}
+
+void Server::_handleMessagesGet( const Request &req, Response &res )
+{
+    const std::string token = getAuthorizationToken(req);
+    auto userOpt = _db.getUserByToken(token);
+
+    if (!userOpt)
+    {
+        ErrorResponseBuilder(res).unauthorized("Unknown token!");
+        spdlog::warn("Unknown token '" + token + "'!");
+        return;
+    }
+
+    try
+    {
+        if (!req.has_param("limit"))
+        {
+            ErrorResponseBuilder(res).badRequest("Limit is needed!");
+            return;
+        }
+
+        int limit = std::stoi(req.get_param_value("limit"));
+        auto messages = _db.getLastMessages(limit);
+        Json msgArray = Json::array();
+
+        std::transform(messages.begin(), messages.end(), std::back_inserter(msgArray), 
+                   []( const MessageJson &msg ) {return msg.toJson();});
+        
+        Json payload = {
+            {"total_count", msgArray.size()},
+            {"messages", msgArray}
+        };
+
+        res.status = StatusCode::OK_200;
+        res.set_content(payload.dump(), "application/json");
+    }
+    catch ( const std::exception &e )
+    {
+        spdlog::warn(std::string(__FILE__) + std::to_string(__LINE__) + e.what());
+        ErrorResponseBuilder(res).badRequest("Error while send message!");
+    }
+}
+
+void Server::_handleMessagesCount( const Request &req, Response &res )
+{
+    const std::string token = getAuthorizationToken(req);
+
+    if (!_db.isTokenExists(token))
+    {
+        ErrorResponseBuilder(res).unauthorized("Unknown token!");
+        spdlog::warn("Unknown token '" + token + "'!");
+        return;
+    }
+
+    int count = _db.getMessageCount();
+
+    if (count == -1)
+    {
+        ErrorResponseBuilder(res).internal("Something was wrong, check logs...");
+        return;
+    }
+
+    Json countResp = {
+        {"status", "success"},
+        {"count", count}
+    };
+
+    res.status = StatusCode::OK_200;
+    res.set_content(countResp.dump(), "application/json");
 }
 
 void Server::_setupHandlers( void )
@@ -290,6 +425,23 @@ void Server::_setupHandlers( void )
 
     _server->Get("/api/users/online", [&]( const Request &req, Response &res ) {
         _handleOnline(req, res);
+    });
+
+    _server->Get("/api/users/count", [&]( const Request &req, Response &res ) {
+        _handleUsersCount(req, res);
+    });
+
+    // Messages endpoints
+    _server->Post("/api/messages", [&]( const Request &req, Response &res ) {
+        _handleMessagesPost(req, res);
+    });
+
+    _server->Get("/api/messages", [&]( const Request &req, Response &res ) {
+        _handleMessagesGet(req, res);
+    });
+
+    _server->Get("/api/messages/count", [&]( const Request &req, Response &res ) {
+        _handleMessagesCount(req, res);
     });
 }
 

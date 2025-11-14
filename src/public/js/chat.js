@@ -20,16 +20,16 @@ class ChatManager {
             await this.loadUserData();
             
             // Загружаем историю сообщений
-            /// await this.loadMessages();
+            await this.loadMessages();
             
             // Загружаем онлайн пользователей
             await this.loadOnlineUsers();
             
             // Загружаем статистику
-            /// await this.loadStats();
+            await this.loadStats();
             
             // Настраиваем обновления
-            /// this.setupAutoRefresh();
+            //this.setupAutoRefresh();
             
             // Настраиваем обработчики событий
             this.setupEventListeners();
@@ -101,7 +101,7 @@ class ChatManager {
         try {
             const response = await fetch(`/api/messages/new?after_id=${this.lastMessageId}`, {
                 headers: {
-                    'Authorization': `Bearer ${Utils.getToken()}`
+                    'Authorization-Token': `${await Utils.getToken()}`
                 }
             });
 
@@ -135,7 +135,7 @@ class ChatManager {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${Utils.getToken()}`
+                    'Authorization-Token': `${await Utils.getToken()}`
                 },
                 body: JSON.stringify({
                     message_text: messageText
@@ -190,16 +190,16 @@ class ChatManager {
     // Создание элемента сообщения
     createMessageElement(message) {
         const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${message.user_id === this.currentUser.id ? 'own' : ''}`;
+        messageDiv.className = `message ${message.user.id === this.currentUser.id ? 'own' : ''}`;
         
-        const avatarText = this.getAvatarText(message.user_login);
+        const avatarText = this.getAvatarText(message.user.first_name, message.user.last_name);
         const time = this.formatTime(message.timestamp);
         
         messageDiv.innerHTML = `
             <div class="message-header">
                 <div class="message-avatar">${avatarText}</div>
                 <div>
-                    <span class="message-user">${message.user_login}</span>
+                    <span class="message-user">${message.user.first_name}&nbsp;${message.user.last_name}</span>
                     <span class="message-time">${time}</span>
                 </div>
             </div>
@@ -222,7 +222,6 @@ class ChatManager {
 
             const data = await response.json();
 
-            alert(JSON.stringify(data));
             this.displayOnlineUsers(data.online_users);
             document.getElementById('onlineCount').textContent = data.total_online;
             
@@ -242,7 +241,7 @@ class ChatManager {
 
         container.innerHTML = users.map(user => `
             <div class="user-item">
-                <div class="user-avatar">${this.getAvatarText(user.login)}</div>
+                <div class="user-avatar">${this.getAvatarText(user.first_name, user.last_name)}</div>
                 ${user.login}
             </div>
         `).join('');
@@ -253,13 +252,13 @@ class ChatManager {
         try {
             const messagesResponse = await fetch('/api/messages/count', {
                 headers: {
-                    'Authorization': `Bearer ${Utils.getToken()}`
+                    'Authorization-Token': `${await Utils.getToken()}`
                 }
             });
             
             const usersResponse = await fetch('/api/users/count', {
                 headers: {
-                    'Authorization': `Bearer ${Utils.getToken()}`
+                    'Authorization-Token': `${await Utils.getToken()}`
                 }
             });
 
@@ -280,10 +279,10 @@ class ChatManager {
 
     // Настройка автоматического обновления
     setupAutoRefresh() {
-        // Обновление сообщений каждые 3 секунды
+        // Обновление сообщений каждые 1.5 секунды
         this.refreshInterval = setInterval(() => {
             this.loadNewMessages();
-        }, 3000);
+        }, 1500);
 
         // Обновление онлайн пользователей каждые 10 секунд
         this.onlineRefreshInterval = setInterval(() => {
@@ -349,12 +348,18 @@ class ChatManager {
 
     // Вспомогательные методы
 
-    getAvatarText(login) {
-        return login.substring(0, 2).toUpperCase();
+    getAvatarText(first_name, last_name) {
+        if (last_name.length !== 0) {
+            return (first_name[0] + last_name[0]).toUpperCase();
+        } else {
+            return (first_name[0] + first_name[1]).toUpperCase();
+        }
     }
 
     formatTime(timestamp) {
-        const date = new Date(timestamp);
+        let date = new Date(timestamp);
+
+        date.setMinutes(date.getMinutes() - ((new Date()).getTimezoneOffset()));
         return date.toLocaleTimeString('ru-RU', { 
             hour: '2-digit', 
             minute: '2-digit' 

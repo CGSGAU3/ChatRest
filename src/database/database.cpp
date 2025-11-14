@@ -405,6 +405,96 @@ auto Database::getUserById( const int id ) const -> std::optional<User>
     return std::nullopt; 
 }
 
+auto Database::sendMessage( const int userId, const std::string &text ) -> Error
+{
+    Error err;
+
+    try
+    {
+        SQLite::Statement query(_db, R"(
+            INSERT INTO messages (user_id, message_text) VALUES (?, ?)
+        )");
+
+        query.bind(1, userId);
+        query.bind(2, text);
+
+        query.exec();
+    }
+    catch ( const std::exception &e )
+    {
+        err = true;
+        err.errorId = 500;
+        err.message = e.what();
+        spdlog::error(e.what());
+    }
+
+    return err;
+}
+
+auto Database::getLastMessages( const int limit ) -> std::vector<MessageJson>
+{
+    std::vector<MessageJson> messages;
+    
+    try
+    {
+        SQLite::Statement query(_db, R"(
+            SELECT m.*, u.login as login, u.is_online as is_online,
+            u.first_name as first_name, u.last_name as last_name
+            FROM messages m 
+            LEFT JOIN users u ON m.user_id = u.id 
+            ORDER BY m.timestamp ASC 
+            LIMIT ?
+        )");
+        query.bind(1, limit);
+        
+        while (query.executeStep())
+        {
+            MessageJson msg;
+
+            msg.id = query.getColumn("id").getInt();
+            msg.userId = query.getColumn("user_id").getInt();
+            msg.messageText = query.getColumn("message_text").getString();
+
+            msg.user.id = msg.userId;
+            msg.user.login = query.getColumn("login").getString();
+            msg.user.firstName = query.getColumn("first_name").getString();
+            msg.user.lastName = query.getColumn("last_name").getString();
+            msg.user.isOnline = (int)query.getColumn("is_online");
+
+            msg.timestamp = query.getColumn("timestamp").getString();
+            
+            messages.push_back(msg);
+        }
+        
+    }
+    catch ( const std::exception &e )
+    {
+        spdlog::error(std::string("Error getting messages: ") + e.what());
+        return {};
+    }
+    
+    return messages;
+}
+
+int Database::getMessageCount( void )
+{
+    try
+    {
+        SQLite::Statement query(_db, "SELECT COUNT(*) FROM messages");
+
+        if (query.executeStep())
+        {
+            return query.getColumn(0).getInt();
+        }
+    }
+    catch ( const std::exception &e )
+    {
+        spdlog::error(e.what());
+    }
+    
+    return -1;
+}
+
 Database::~Database( void )
 {
     try
