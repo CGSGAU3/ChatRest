@@ -44,6 +44,7 @@ private:
     
     void _handleMessagesPost( const Request &req, Response &res );
     void _handleMessagesGet( const Request &req, Response &res );
+    void _handleMessagesGetNew( const Request &req, Response &res );
     void _handleMessagesCount( const Request &req, Response &res );
 
     void _setupHandlers( void );

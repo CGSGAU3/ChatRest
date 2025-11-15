@@ -442,7 +442,7 @@ auto Database::getLastMessages( const int limit ) -> std::vector<MessageJson>
             u.first_name as first_name, u.last_name as last_name
             FROM messages m 
             LEFT JOIN users u ON m.user_id = u.id 
-            ORDER BY m.timestamp ASC 
+            ORDER BY m.timestamp DESC, id DESC
             LIMIT ?
         )");
         query.bind(1, limit);
@@ -465,7 +465,52 @@ auto Database::getLastMessages( const int limit ) -> std::vector<MessageJson>
             
             messages.push_back(msg);
         }
+        std::reverse(messages.begin(), messages.end());
+    }
+    catch ( const std::exception &e )
+    {
+        spdlog::error(std::string("Error getting messages: ") + e.what());
+        return {};
+    }
+    
+    return messages;
+}
+
+auto Database::getMessagesAfter( const int afterId ) -> std::vector<MessageJson>
+{
+    std::vector<MessageJson> messages;
+    
+    try
+    {
+        SQLite::Statement query(_db, R"(
+            SELECT m.*, u.login as login, u.is_online as is_online,
+            u.first_name as first_name, u.last_name as last_name
+            FROM messages m 
+            LEFT JOIN users u ON m.user_id = u.id 
+            WHERE m.id > ?
+            ORDER BY m.timestamp DESC, id DESC
+        )");
+        query.bind(1, afterId);
         
+        while (query.executeStep())
+        {
+            MessageJson msg;
+
+            msg.id = query.getColumn("id").getInt();
+            msg.userId = query.getColumn("user_id").getInt();
+            msg.messageText = query.getColumn("message_text").getString();
+
+            msg.user.id = msg.userId;
+            msg.user.login = query.getColumn("login").getString();
+            msg.user.firstName = query.getColumn("first_name").getString();
+            msg.user.lastName = query.getColumn("last_name").getString();
+            msg.user.isOnline = (int)query.getColumn("is_online");
+
+            msg.timestamp = query.getColumn("timestamp").getString();
+            
+            messages.push_back(msg);
+        }
+        std::reverse(messages.begin(), messages.end());
     }
     catch ( const std::exception &e )
     {
@@ -491,7 +536,7 @@ int Database::getMessageCount( void )
     {
         spdlog::error(e.what());
     }
-    
+
     return -1;
 }
 

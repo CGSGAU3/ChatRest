@@ -215,11 +215,7 @@ void Server::_handleMe( const Request &req, Response &res )
         return;
     }
 
-    Json user = {
-        {"login", userOpt.value().login},
-        {"first_name", userOpt.value().firstName},
-        {"last_name", userOpt.value().lastName},
-    };
+    Json user = userOpt.value().toJson();
 
     res.status = StatusCode::OK_200;
     res.set_content(user.dump(), "application/json");
@@ -336,7 +332,7 @@ void Server::_handleMessagesGet( const Request &req, Response &res )
         Json msgArray = Json::array();
 
         std::transform(messages.begin(), messages.end(), std::back_inserter(msgArray), 
-                   []( const MessageJson &msg ) {return msg.toJson();});
+                       []( const MessageJson &msg ) {return msg.toJson();});
         
         Json payload = {
             {"total_count", msgArray.size()},
@@ -349,7 +345,49 @@ void Server::_handleMessagesGet( const Request &req, Response &res )
     catch ( const std::exception &e )
     {
         spdlog::warn(std::string(__FILE__) + std::to_string(__LINE__) + e.what());
-        ErrorResponseBuilder(res).badRequest("Error while send message!");
+        ErrorResponseBuilder(res).badRequest("Error while get last messages!");
+    }
+}
+
+void Server::_handleMessagesGetNew( const Request &req, Response &res )
+{
+    const std::string token = getAuthorizationToken(req);
+    auto userOpt = _db.getUserByToken(token);
+
+    if (!userOpt)
+    {
+        ErrorResponseBuilder(res).unauthorized("Unknown token!");
+        spdlog::warn("Unknown token '" + token + "'!");
+        return;
+    }
+
+    try
+    {
+        if (!req.has_param("after_id"))
+        {
+            ErrorResponseBuilder(res).badRequest("After_id is needed!");
+            return;
+        }
+
+        int afterId = std::stoi(req.get_param_value("after_id"));
+        auto messages = _db.getMessagesAfter(afterId);
+        Json msgArray = Json::array();
+
+        std::transform(messages.begin(), messages.end(), std::back_inserter(msgArray), 
+                       []( const MessageJson &msg ) {return msg.toJson();});
+        
+        Json payload = {
+            {"total_count", msgArray.size()},
+            {"messages", msgArray}
+        };
+
+        res.status = StatusCode::OK_200;
+        res.set_content(payload.dump(), "application/json");
+    }
+    catch ( const std::exception &e )
+    {
+        spdlog::warn(std::string(__FILE__) + std::to_string(__LINE__) + e.what());
+        ErrorResponseBuilder(res).badRequest("Error while get new messages!");
     }
 }
 
@@ -438,6 +476,10 @@ void Server::_setupHandlers( void )
 
     _server->Get("/api/messages", [&]( const Request &req, Response &res ) {
         _handleMessagesGet(req, res);
+    });
+
+    _server->Get("/api/messages/new", [&]( const Request &req, Response &res ) {
+        _handleMessagesGetNew(req, res);
     });
 
     _server->Get("/api/messages/count", [&]( const Request &req, Response &res ) {

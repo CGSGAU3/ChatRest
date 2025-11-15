@@ -5,6 +5,7 @@ class ChatManager {
         this.refreshInterval = null;
         this.onlineRefreshInterval = null;
         this.isAutoScroll = true;
+        this.preventUpdate = false;
     }
 
     // Инициализация чата
@@ -29,7 +30,7 @@ class ChatManager {
             await this.loadStats();
             
             // Настраиваем обновления
-            //this.setupAutoRefresh();
+            this.setupAutoRefresh();
             
             // Настраиваем обработчики событий
             this.setupEventListeners();
@@ -98,6 +99,11 @@ class ChatManager {
 
     // Загрузка новых сообщений
     async loadNewMessages() {
+        if (this.preventUpdate) {
+            this.preventUpdate = false;
+            return;
+        }
+
         try {
             const response = await fetch(`/api/messages/new?after_id=${this.lastMessageId}`, {
                 headers: {
@@ -105,7 +111,11 @@ class ChatManager {
                 }
             });
 
-            if (!response.ok) return;
+            if (!response.ok) {
+                alert("Failed to load messages, try to relogin");
+                window.location.href = '/';
+                return;
+            }
 
             const data = await response.json();
             
@@ -150,7 +160,9 @@ class ChatManager {
             messageInput.value = '';
             
             // Обновляем сообщения
+            this.preventUpdate = false;
             await this.loadNewMessages();
+            this.preventUpdate = true;
             
         } catch (error) {
             console.error('Error sending message:', error);
@@ -218,7 +230,11 @@ class ChatManager {
                 }
             });
 
-            if (!response.ok) return;
+            if (!response.ok) {
+                alert("Failed to load messages, try to relogin");
+                window.location.href = '/';
+                return;
+            }
 
             const data = await response.json();
 
@@ -265,11 +281,19 @@ class ChatManager {
             if (messagesResponse.ok) {
                 const messagesData = await messagesResponse.json();
                 document.getElementById('totalMessages').textContent = messagesData.count;
+            } else {
+                alert("Failed to load messages count, try to relogin");
+                window.location.href = '/';
+                return;
             }
 
             if (usersResponse.ok) {
                 const usersData = await usersResponse.json();
                 document.getElementById('totalUsers').textContent = usersData.count;
+            } else {
+                alert("Failed to load users count, try to relogin");
+                window.location.href = '/';
+                return;
             }
             
         } catch (error) {
@@ -284,10 +308,11 @@ class ChatManager {
             this.loadNewMessages();
         }, 1500);
 
-        // Обновление онлайн пользователей каждые 10 секунд
+        // Обновление онлайн пользователей каждые 5 секунд
         this.onlineRefreshInterval = setInterval(() => {
             this.loadOnlineUsers();
-        }, 10000);
+            this.loadStats();
+        }, 5000);
     }
 
     // Настройка обработчиков событий

@@ -18,6 +18,7 @@ struct User
     auto toJson( bool showPass = false ) const -> nlohmann::json
     {
         nlohmann::json res = {
+            {"id", id},
             {"login", login},
             {"password", password},
             {"first_name", firstName},
@@ -112,6 +113,7 @@ public:
 
     auto sendMessage( const int userId, const std::string &text ) -> Error;
     auto getLastMessages( const int limit ) -> std::vector<MessageJson>;
+    auto getMessagesAfter( const int afterId ) -> std::vector<MessageJson>;
     int getMessageCount( void );
 
     auto isTokenExists( const std::string &token ) -> bool;
