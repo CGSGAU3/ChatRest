@@ -5,6 +5,7 @@ project(server LANGUAGES CXX)
 include( ${PROJECT_SOURCE_DIR}/cmake/cpm.cmake )
 include( ${PROJECT_SOURCE_DIR}/src/src.cmake )
 include( ${PROJECT_SOURCE_DIR}/cmake/external.cmake )
+include( ${PROJECT_SOURCE_DIR}/tests/tests.cmake )
 
 add_executable( ${PROJECT_NAME} )
 
@@ -28,4 +29,3 @@ target_link_libraries( ${PROJECT_NAME}
     PRIVATE
     ${SERVER_LIBS}
 )
-
