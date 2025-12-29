@@ -1,0 +1,14 @@
+{
+  "name": "chat-integration-tests",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ci": "playwright test --reporter=line",
+    "prepare:win": "run-tests.bat",
+    "server:start": "server.exe"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  }
+}
