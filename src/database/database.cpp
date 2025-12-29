@@ -10,6 +10,8 @@ Database::Database( const std::string &name ) :
 {
     try
     {
+        _db.exec("PRAGMA foreign_keys = ON;");
+
         _db.exec(R"(
                 CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -540,11 +542,29 @@ int Database::getMessageCount( void )
     return -1;
 }
 
+void Database::clear( void )
+{
+    try
+    {
+        _db.exec("DELETE FROM users;");
+        _db.exec("DELETE FROM messages;");
+        _db.exec("DELETE FROM auth_tokens;");
+
+        _db.exec("DELETE FROM SQLITE_SEQUENCE WHERE name='users';");
+        _db.exec("DELETE FROM SQLITE_SEQUENCE WHERE name='messages';");
+        _db.exec("DELETE FROM SQLITE_SEQUENCE WHERE name='auth_tokens';");
+    }
+    catch( const std::exception &e )
+    {
+        spdlog::error(e.what());
+    }
+}
+
 Database::~Database( void )
 {
     try
     {
-        _db.exec(R"(DROP TABLE IF EXISTS auth_tokens CASCADE)");
+        _db.exec(R"(DROP TABLE IF EXISTS auth_tokens)");
         spdlog::trace("All the authorization tokens were reset!");
     }
     catch ( const std::exception &e )

@@ -118,5 +118,7 @@ public:
 
     auto isTokenExists( const std::string &token ) -> bool;
 
+    void clear( void );
+
     ~Database( void );
 };
