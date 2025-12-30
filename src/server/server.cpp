@@ -485,6 +485,10 @@ void Server::_setupHandlers( void )
     _server->Get("/api/messages/count", [&]( const Request &req, Response &res ) {
         _handleMessagesCount(req, res);
     });
+
+    _server->Options(R"(.*)", [&]( const Request &req, Response &res ) {
+        res.status = 200;
+    });
 }
 
 void Server::_setupStaticHandlers( void )
