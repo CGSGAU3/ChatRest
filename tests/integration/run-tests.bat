@@ -3,7 +3,7 @@ echo === Prepare environment ===
 
 rem 1. Copy server binary
 echo Copy server binary...
-copy ..\..\build\Debug\server.exe .\server.exe
+copy ..\..\build\Release\server.exe .\server.exe
 
 rem 2. Install deps
 echo Install deps...

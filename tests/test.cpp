@@ -38,6 +38,7 @@
 
 TEST(ClassTests, get_user_test)
 {
+    spdlog::set_level(spdlog::level::err);
     Database test("test.db");
 
     test.clear();
